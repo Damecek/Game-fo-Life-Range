@@ -18,8 +18,9 @@
     var canvasHeight = 700; // don't change these
     var scale = 5; // change this to change the size of the cells
     var speed = 80; // change this to change the speed of the simulation
-    var type = 'smooth vanilla'; // this defines the method used for next generation (smooth vanilla, sigmoid, relu)
-    var numbersOfGrey = 20; // this defines number of colors used for printing the cell
+    var type = 'cell based'; // this defines the method used for next generation 
+    // (smooth vanilla, smooth vanilla stable, cell based, sigmoid, relu)
+    var numbersOfGrey = 10; // this defines number of colors used for printing the cell
 
     class Cell {
         static width = scale;
@@ -108,6 +109,36 @@
                     return numAlive / killFactor;
                 }
             };
+
+            const smoothVanillaStable = (numAlive, alive) => {
+                const nothingStart = 1.5; // higher makes less cells alive
+                const mid = 2.2; // lower makes more cells alive
+                const aliveStop = 3.5; // higher makes more cells alive
+                const killFactor = 150; // higher is more aggressive, more cells will die
+
+                if (numAlive >= nothingStart && numAlive <= mid) {
+                    return alive;
+                } else if (numAlive >= mid && numAlive <= aliveStop) {
+                    return numAlive / (2 * (aliveStop - mid)) + 1 - aliveStop / (2 * (aliveStop - mid));
+                } else {
+                    return numAlive / killFactor;
+                }
+            };
+            
+            const cellBased = (numAlive, alive) => {
+                const a = 1.4;
+                const b = 2;
+                const c = 3;
+                const killFactor = 90;
+                
+                if (numAlive >= a && numAlive <= b) {
+                    return alive;
+                } else if (numAlive >= b && numAlive <= c) {
+                    return (alive + 1) / 2;
+                } else {
+                    return numAlive / killFactor;
+                }
+            };
             // Loop over all cells
             for (let x = 0; x < GameWorld.numColumns; x++) {
                 for (let y = 0; y < GameWorld.numRows; y++) {
@@ -123,7 +154,8 @@
                         + this.isAlive(x, y + 1)
                         + this.isAlive(x + 1, y + 1);
                     let centerIndex = this.gridToIndex(x, y);
-
+                    const alive = this.gameObjects[centerIndex].alive;
+                    
                     switch (type) {
                         case 'sigmoid':
                             this.gameObjects[centerIndex].nextAlive = sigmoid(numAlive);
@@ -133,6 +165,12 @@
                             break;
                         case 'smooth vanilla':
                             this.gameObjects[centerIndex].nextAlive = smoothVanilla(numAlive);
+                            break;
+                        case 'smooth vanilla stable':
+                            this.gameObjects[centerIndex].nextAlive = smoothVanillaStable(numAlive, alive);
+                            break;
+                        case 'cell based':
+                            this.gameObjects[centerIndex].nextAlive = cellBased(numAlive, alive);
                             break;
                     }
                 }
